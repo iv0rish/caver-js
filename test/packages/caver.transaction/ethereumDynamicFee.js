@@ -127,7 +127,7 @@ describe('TxTypeEthereumDynamicFee', () => {
         getNonceSpy.returns('0x3a')
         getChainIdSpy = sandbox.stub(caver.transaction.klaytnCall, 'getChainId')
         getChainIdSpy.returns('0x7e3')
-        baseFee = '0x0'
+        baseFee = '0x5d21dba00'
         getHeaderByNumberSpy = sandbox.stub(caver.transaction.klaytnCall, 'getHeaderByNumber')
         getHeaderByNumberSpy.returns({ baseFeePerGas: baseFee })
         maxPriorityFeePerGas = '0x5d21dba00'
@@ -899,14 +899,14 @@ describe('TxTypeEthereumDynamicFee', () => {
     })
 
     context('ethereumDynamicFee.fillTransaction', () => {
-        it('CAVERJS-UNIT-TRANSACTION-547: fillTransaction should call klay_getMaxPriorityFeePerGas to fill maxPriorityFeePerGas when maxPriorityFeePerGas is undefined', async () => {
+        it('CAVERJS-UNIT-TRANSACTION-547: fillTransaction should call klay_maxPriorityFeePerGas to fill maxPriorityFeePerGas when maxPriorityFeePerGas is undefined', async () => {
             transactionObj.nonce = '0x3a'
             delete transactionObj.maxPriorityFeePerGas
             const tx = caver.transaction.ethereumDynamicFee.create(transactionObj)
 
             await tx.fillTransaction()
             expect(getMaxPriorityFeePerGasSpy).to.have.been.calledOnce
-            expect(getHeaderByNumberSpy).to.have.been.calledOnce
+            expect(getHeaderByNumberSpy).not.to.have.been.calledOnce // getHeader only when maxFeePerGas is empty to get baseFee.
             expect(getNonceSpy).not.to.have.been.calledOnce
             expect(getChainIdSpy).not.to.have.been.calledOnce
         }).timeout(200000)
@@ -915,9 +915,8 @@ describe('TxTypeEthereumDynamicFee', () => {
             transactionObj.nonce = '0x3a'
             delete transactionObj.maxFeePerGas
             const tx = caver.transaction.ethereumDynamicFee.create(transactionObj)
-            const expectedMaxFeePerGas = utils.toHex(
-                utils.hexToNumber(baseFee) * 2 + utils.hexToNumber(transactionObj.maxPriorityFeePerGas)
-            )
+
+            const expectedMaxFeePerGas = caver.utils.toHex(caver.utils.hexToNumber(baseFee) * 2)
 
             await tx.fillTransaction()
 
