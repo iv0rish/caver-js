@@ -167,36 +167,23 @@ class AbstractTransaction {
     }
 
     /**
-     * Returns a suggested gas price to use in the transaction.
-     * If `baseFee` is bigger than `0` in the header,
-     * then returns `baseFee * 2`.
-     * If not, calls `klay_gasPrice` to return unit price of the gas.
+     * Suggests a gas price to use in the transaction.
+     * Calls `klay_gasPrice` to return unit price of the gas.
      *
      * @example
-     * const result = await tx.suggestedGasPrice()
+     * const result = await tx.suggestGasPrice()
      *
      * @return {string} gas price
      */
-    async suggestedGasPrice() {
-        const bfStr = await this.getBaseFee()
-        const baseFee = utils.hexToNumber(bfStr)
-
-        let suggestedGasPrice
-        if (baseFee > 0) {
-            // After Magma hard fork, set gasPrice (or maxFeePerGas) with baseFee * 2
-            suggestedGasPrice = baseFee * 2
-            suggestedGasPrice = utils.toHex(suggestedGasPrice)
-        } else {
-            // Before Magma hard fork, set gasPrice (or maxFeePerGas) with gas unit price
-            suggestedGasPrice = await this.klaytnCall.getGasPrice()
-        }
-        return suggestedGasPrice
+    async suggestGasPrice() {
+        const suggestion = await this.klaytnCall.getGasPrice()
+        return suggestion
     }
 
     /**
      * Calls `klay_gasPrice` klay rpc call.
      * Note that when Klaytn network use dynamic gas fee,
-     * you need to use `tx.suggestedGasPrice` function in the gasPrice field.
+     * you need to use `tx.suggestGasPrice` function in the gasPrice field.
      *
      * @example
      * const result = await tx.getGasPrice()
