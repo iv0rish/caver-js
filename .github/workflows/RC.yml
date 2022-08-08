@@ -2,7 +2,7 @@ name: caver-js rc workflow
 on:
   push:
     tags:
-      - /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+      - v*.*.*-*
 
 jobs:
   workflow_publish:
