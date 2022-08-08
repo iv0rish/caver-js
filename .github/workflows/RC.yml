@@ -2,7 +2,7 @@ name: caver-js rc workflow
 on:
   push:
     tags:
-      - v*.*.*-*
+      - v*.*.*
 
 jobs:
   workflow_publish:
@@ -17,13 +17,12 @@ jobs:
 
       - name: Verify version between tag and file
         run: |
-          TAG_VERSION = ${{ steps.vars.outputs.tag }}
-          echo "tag version is " $TAG_VERSION
+          echo "tag version is " ${{ steps.vars.outputs.tag }}
 
           file_version=v$(${GITHUB_WORKSPACE}/.github/script.sh)
           echo "file version is " $file_version
 
-          if [ $file_version == ${TAG_VERSION%-*} ]; then
+          if [ $file_version == ${${{ steps.vars.outputs.tag }}%-*} ]; then
             echo "verification pass"
           else
             echo "It's not same version."
