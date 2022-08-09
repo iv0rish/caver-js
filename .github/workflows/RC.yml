@@ -11,12 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: check directory
-        run: |
-          ls $GITHUB_WORKSPACE        
-          echo "-----------------------"
-          ls $GITHUB_WORKSPACE/.github
-
       - name: Get git tag version
         id: vars
         run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
@@ -25,7 +19,7 @@ jobs:
         run: |
           echo "tag version is " ${{ steps.vars.outputs.tag }}
 
-          file_version=v$(${GITHUB_WORKSPACE}/.github/version.sh)
+          file_version=v$(${GITHUB_WORKSPACE}/.github/workflows/version.sh)
           echo "file version is " $file_version
 
           if [ $file_version == ${${{ steps.vars.outputs.tag }}%-*} ]; then
