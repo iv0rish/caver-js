@@ -19,10 +19,13 @@ jobs:
         run: |
           echo "tag version is " ${{ steps.vars.outputs.tag }}
 
+          tag_version=$(echo ${{ steps.vars.outputs.tag }} | cut -c -6)
+          echo "tag version without rc is " $tag_version
+
           file_version=v$(${GITHUB_WORKSPACE}/.github/workflows/version.sh)
           echo "file version is " $file_version
 
-          if [ $file_version == ${${{ steps.vars.outputs.tag }}:0:6} ]; then
+          if [ $file_version == $tag_version ]; then
             echo "verification pass"
           else
             echo "It's not same version."
