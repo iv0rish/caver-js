@@ -11,6 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: check directory
+        run: |
+        ls $GITHUB_WORKSPACE        
+        echo "-----------------------"
+        ls $GITHUB_WORKSPACE/.github
+
       - name: Get git tag version
         id: vars
         run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
