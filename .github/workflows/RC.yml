@@ -1,0 +1,102 @@
+name: caver-js rc workflow
+on:
+  push:
+    tags:
+      - v*.*.*
+
+jobs:
+  tag_verify:
+    name: tag_verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get git tag version
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+
+      - name: Get release tag
+        id: release
+        run: echo ::set-output name=tag::$(echo ${{ steps.vars.outputs.tag }} | cut -c -6)
+
+      - name: Get packages.json tag
+        id: packages
+        run: echo ::set-output name=tag::v$(${GITHUB_WORKSPACE}/.github/workflows/version.sh)
+
+      - name: Verify version between tag and file
+        run: |
+          echo "tag version is " ${{ steps.vars.outputs.tag }}
+
+          echo "tag version without rc is " ${{ steps.release.outputs.tag }}
+
+          echo "file version is " ${{ steps.packages.outputs.tag }}
+
+          if [ ${{ steps.packages.outputs.tag }} == ${{ steps.release.outputs.tag }} ]; then
+            echo "verification pass"
+          else
+            echo "It's not same version."
+            exit 1
+          fi
+
+  rc_publish:
+    name: rc_publish
+    needs: tag_verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get git tag version
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+
+      - name: Get release tag
+        id: release
+        run: echo ::set-output name=tag::$(echo ${{ steps.vars.outputs.tag }} | cut -c -6)
+
+      - name: Install Github hub
+        run: sudo apt install hub
+
+      - name: Setup the NPM
+        uses: actions/setup-node@v2
+        with:
+          node-version: "12.x"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Update version in package.json
+        run: |
+          sed -i "s/\"version\": \".*\",/\"version\": \"${{ steps.vars.outputs.tag }}\",/" package.json
+
+      # - name: Publish package with rc tag
+      #   run: |
+      #     echo "Publishing a release candidate! version=${{ steps.vars.outputs.tag }}"
+      #     npm install
+      #     npm run build
+      #     npm publish --tag rc
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Push to release branch
+        run: |
+          echo "push to release branch: /release/${{ steps.release.outputs.tag }}"
+          git checkout -b release/${{ steps.release.outputs.tag }}
+          git push -u origin +release/${{ steps.release.outputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Pull Request
+        run: |
+          echo ls
+          echo hub
+
+          cd $GITHUB_WORKSPACE
+          version=$(hub pr list -s open -L 10 -f "%H%n")
+          echo $version
+
+          if [[ $version == *"release/${{ steps.release.outputs.tag }}"* ]]; then
+            echo "PR already exist"
+          else
+            echo "hub pull-request -m "[Master] release/${{ steps.release.outputs.tag }} QA Signoff" -b ${{ env.GITHUB_REPOSITORY }}:master -h ${{ env.GITHUB_REPOSITORY }}:${{ steps.release.outputs.tag }}"
+            echo -e "[Master] release/${{ steps.release.outputs.tag }} QA Sign-off\n\nThis PR is automatically created by CI to release a new official version of ${{ env.GITHUB_REPOSITORY }}.\n\nWhen this PR is approved by QA team, a new version will be released." | hub pull-request -b ${{ env.GITHUB_REPOSITORY }}:master -h ${{ env.GITHUB_REPOSITORY }}:release/${{ steps.release.outputs.tag }} -l GithubActions -F-
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

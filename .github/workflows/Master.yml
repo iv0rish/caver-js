@@ -1,0 +1,127 @@
+name: caver-js rc workflow
+on:
+  pull_request:
+    branches:
+      - master
+    types: [closed]
+
+jobs:
+  if_merged:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo The PR was merged
+
+  tagging_delete_branch:
+    name: tagging_delete_branch
+    needs: if_merged
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get packages.json tag
+        id: packages
+        run: echo ::set-output name=tag::v$(${GITHUB_WORKSPACE}/.github/workflows/version.sh)
+
+      - name: Generate Release Tag
+        run: |
+          current_version=${{ steps.packages.outputs.tag }}
+          echo "git tag $current_version"
+          git tag -a $current_version -m "${{ env.GITHUB_REF_NAME }}"
+          git push origin $current_version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete release branch
+        run: |
+          version=${{ steps.packages.outputs.tag }}
+
+          if [[ "release/v" = $(git log --oneline -1 | grep -o "release/v") ]]; then
+            echo "Delete branch release/$version"
+            git push origin --delete release/$version
+          else
+            echo "Need to delete branch manually"
+          fi
+
+  tag_verify:
+    name: tag_verify
+    needs: tagging_delete_branch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get git tag version
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+
+      - name: Get packages.json tag
+        id: packages
+        run: echo ::set-output name=tag::v$(${GITHUB_WORKSPACE}/.github/workflows/version.sh)
+
+      - name: verify tag and file verison match
+        run: |
+          echo "tag version is " ${{ steps.vars.outputs.tag }}
+
+          file_version=${{ steps.packages.outputs.tag }}
+          echo "file version is " $file_version
+
+          if [ $file_version == ${{ steps.vars.outputs.tag }} ]; then
+            echo "verification pass"
+          else
+            echo "It's not same version."
+            exit 1
+          fi
+
+  tagger_verify:
+    name: tagger_verify
+    needs:
+      - tagging_delete_branch
+      - tag_verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get git tag version
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+
+      - name: Verify tag and file version match
+        run: |
+          TAGGER=$(git for-each-ref --format='%(tagger)' refs/tags/${{ steps.vars.outputs.tag }} | sed 's/ .*//')
+          if [ $TAGGER == 'github-actions[bot]' ]; then
+            echo "Pass! Tagger is github-actions"
+          else
+            echo "Only github-actions can tagging major version"
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  major_publish:
+    name: major_publish
+    needs:
+      - tag_verify
+      - tagger_verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get git tag version
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+
+      - name: Setup the NPM
+        uses: actions/setup-node@v2
+        with:
+          node-version: "12.x"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Publish package with rc tag
+        run: |
+          echo "Publishing a major release! version=${{ steps.vars.outputs.tag }}"
+          npm install
+          npm run build
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
