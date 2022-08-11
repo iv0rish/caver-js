@@ -121,6 +121,7 @@ jobs:
         run: |
           echo "Publishing a major release! version=${{ steps.vars.outputs.tag }}"
           npm install
+
           npm run build
           npm publish
         env:
