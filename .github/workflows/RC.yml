@@ -53,6 +53,9 @@ jobs:
         id: release
         run: echo ::set-output name=tag::$(echo ${{ steps.vars.outputs.tag }} | cut -c -6)
 
+      - name: Install Github hub
+        run: sudo apt install hub
+
       - name: Setup the NPM
         uses: actions/setup-node@v2
         with:
