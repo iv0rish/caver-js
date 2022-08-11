@@ -79,7 +79,9 @@ jobs:
         run: |
           echo "push to release branch: /release/${{ steps.release.outputs.tag }}"
           git checkout -b release/${{ steps.release.outputs.tag }}
-          git push origin release/${{ steps.release.outputs.tag }}
+          git push -u origin +release/${{ steps.release.outputs.tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Pull Request
         run: |
