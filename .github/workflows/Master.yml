@@ -2,7 +2,7 @@ name: caver-js rc workflow
 on:
   pull_request:
     branches:
-      - master
+      - test-master
     types: [closed]
 
 jobs:
