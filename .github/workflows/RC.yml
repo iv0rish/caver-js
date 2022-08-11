@@ -83,6 +83,10 @@ jobs:
 
       - name: Create Pull Request
         run: |
+          echo ls
+          echo hub
+
+          cd $GITHUB_WORKSPACE
           version=$(hub pr list -s open -L 10 -f "%H%n")
           echo $version
 
@@ -92,6 +96,8 @@ jobs:
             echo "hub pull-request -m "[Master] release/${{ steps.release.outputs.tag }} QA Signoff" -b ${{ env.GITHUB_REPOSITORY }}:master -h ${{ env.GITHUB_REPOSITORY }}:${{ steps.release.outputs.tag }}"
             echo -e "[Master] release/${{ steps.release.outputs.tag }} QA Sign-off\n\nThis PR is automatically created by CI to release a new official version of ${{ env.GITHUB_REPOSITORY }}.\n\nWhen this PR is approved by QA team, a new version will be released." | hub pull-request -b ${{ env.GITHUB_REPOSITORY }}:master -h ${{ env.GITHUB_REPOSITORY }}:release/${{ steps.release.outputs.tag }} -l GithubActions -F-
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # uses: actions/github-script@v6
         # if:
         # with:
