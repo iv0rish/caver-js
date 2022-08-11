@@ -73,7 +73,7 @@ jobs:
           npm run build
           npm publish --tag rc
         env:
-          NOCE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Push to release branch
         run: |
