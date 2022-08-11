@@ -53,9 +53,11 @@ jobs:
         id: release
         run: echo ::set-output name=tag::$(echo ${{ steps.vars.outputs.tag }} | cut -c -6)
 
-      - name: Authenticate with registry
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/repo/.npmrc
+      - name: Setup the NPM
+        uses: actions/setup-node@v2
+        with:
+          node-version: "12.x"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Update version in package.json
         run: |
@@ -67,6 +69,8 @@ jobs:
           npm install
           npm run build
           npm publish --tag rc
+        env:
+          NOCE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Push to release branch
         run: |
