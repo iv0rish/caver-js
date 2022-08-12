@@ -2,7 +2,7 @@ name: caver-js rc publish workflow
 on:
   push:
     tags:
-      - v*.*.*-*
+      - v*.*.*-rc.**
 
 jobs:
   tag_verify:
