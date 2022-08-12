@@ -1,8 +1,8 @@
-name: caver-js rc workflow
+name: caver-js rc publish workflow
 on:
   push:
     tags:
-      - v*.*.*
+      - v*.*.*-*
 
 jobs:
   tag_verify:
