@@ -59,7 +59,7 @@ jobs:
 
       - name: Get latest tag
         id: latest
-        run: echo ::set-output name=tag::${git describe --tag --abbrev=0}
+        run: echo ::set-output name=tag::$(git describe --tag --abbrev=0)
 
       - name: Get packages.json tag
         id: packages
