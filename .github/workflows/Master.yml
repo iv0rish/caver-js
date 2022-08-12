@@ -60,6 +60,8 @@ jobs:
       - name: Get latest tag
         id: latest
         run: echo ::set-output name=tag::$(git describe --tag --abbrev=0)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get packages.json tag
         id: packages
