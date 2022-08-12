@@ -1,12 +1,21 @@
 name: caver-js release publish workflow
 on:
-  push:
-    tags:
-      - v*.*.*
+  workflow_run:
+    workflows: [caver-js master branch workflow]
+    types:
+      - completed
 
 jobs:
+  on-success:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - run: echo 'The triggering workflow passed'
+
   tag_verify:
     name: tag_verify
+    needs:
+      - on-success
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -19,14 +28,22 @@ jobs:
         id: packages
         run: echo ::set-output name=tag::v$(${GITHUB_WORKSPACE}/.github/workflows/version.sh)
 
+      - name: Get latest tag
+        id: latest
+        run: |
+          cd ${GITHUB_WORKSPACE}
+          echo ::set-output name=tag::$(git describe --tag --abbrev=0)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: verify tag and file verison match
         run: |
-          echo "tag version is " ${{ steps.vars.outputs.tag }}
+          echo "tag version is " ${{ steps.latest.outputs.tag }}
 
           file_version=${{ steps.packages.outputs.tag }}
           echo "file version is " $file_version
 
-          if [ $file_version == ${{ steps.vars.outputs.tag }} ]; then
+          if [ $file_version == ${{ steps.latest.outputs.tag }} ]; then
             echo "verification pass"
           else
             echo "It's not same version."
@@ -45,9 +62,17 @@ jobs:
         id: vars
         run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
 
+      - name: Get latest tag
+        id: latest
+        run: |
+          cd ${GITHUB_WORKSPACE}
+          echo ::set-output name=tag::$(git describe --tag --abbrev=0)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Verify tag and file version match
         run: |
-          TAGGER=$(git for-each-ref --format='%(tagger)' refs/tags/${{ steps.vars.outputs.tag }} | sed 's/ .*//')
+          TAGGER=$(git for-each-ref --format='%(tagger)' refs/tags/${{ steps.latest.outputs.tag }} | sed 's/ .*//')
           if [ $TAGGER == 'github-actions[bot]' ]; then
             echo "Pass! Tagger is github-actions"
           else
