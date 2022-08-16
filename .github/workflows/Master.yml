@@ -40,6 +40,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check branch
+        run: |
+          git branch
+          git describe --tag --abbrev=0
+
       - name: Delete release branch
         run: |
           version=${{ steps.packages.outputs.tag }}
