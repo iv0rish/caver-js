@@ -46,97 +46,102 @@ jobs:
             echo "Need to delete branch manually"
           fi
 
-  # tag_verify:
-  #   name: tag_verify
-  #   needs: tagging_delete_branch
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
+  tag_verify:
+    name: tag_verify
+    needs: tagging_delete_branch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
 
-  #     - name: Get git tag version
-  #       id: vars
-  #       run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - name: Change branch
+        run: |
+          git switch test-master
+          echo git branch
 
-  #     - name: Get latest tag
-  #       id: latest
-  #       run: |
-  #         cd ${GITHUB_WORKSPACE}
-  #         echo ::set-output name=tag::$(git describe --tag --abbrev=0)
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get git tag version
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
 
-  #     - name: Get packages.json tag
-  #       id: packages
-  #       run: echo ::set-output name=tag::v$(${GITHUB_WORKSPACE}/.github/workflows/version.sh)
+      - name: Get latest tag
+        id: latest
+        run: |
+          cd ${GITHUB_WORKSPACE}
+          echo ::set-output name=tag::$(git describe --tag --abbrev=0)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: verify tag and file verison match
-  #       run: |
-  #         echo "tag version is " ${{ steps.latest.outputs.tag }}
+      - name: Get packages.json tag
+        id: packages
+        run: echo ::set-output name=tag::v$(${GITHUB_WORKSPACE}/.github/workflows/version.sh)
 
-  #         file_version=${{ steps.packages.outputs.tag }}
-  #         echo "file version is " $file_version
+      - name: verify tag and file verison match
+        run: |
+          echo "tag version is " ${{ steps.latest.outputs.tag }}
 
-  #         if [ $file_version == ${{ steps.latest.outputs.tag }} ]; then
-  #           echo "verification pass"
-  #         else
-  #           echo "It's not same version."
-  #           exit 1
-  #         fi
+          file_version=${{ steps.packages.outputs.tag }}
+          echo "file version is " $file_version
 
-  # tagger_verify:
-  #   name: tagger_verify
-  #   needs:
-  #     - tagging_delete_branch
-  #     - tag_verify
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
+          if [ $file_version == ${{ steps.latest.outputs.tag }} ]; then
+            echo "verification pass"
+          else
+            echo "It's not same version."
+            exit 1
+          fi
 
-  #     - name: Get git tag version
-  #       id: vars
-  #       run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+  tagger_verify:
+    name: tagger_verify
+    needs:
+      - tagging_delete_branch
+      - tag_verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
 
-  #     - name: Get latest tag
-  #       id: latest
-  #       run: echo ::set-output name=tag::${git describe --tag --abbrev=0}
+      - name: Get git tag version
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
 
-  #     - name: Verify tag and file version match
-  #       run: |
-  #         TAGGER=$(git for-each-ref --format='%(tagger)' refs/tags/${{ steps.latest.outputs.tag }} | sed 's/ .*//')
-  #         if [ $TAGGER == 'github-actions[bot]' ]; then
-  #           echo "Pass! Tagger is github-actions"
-  #         else
-  #           echo "Only github-actions can tagging major version"
-  #           exit 1
-  #         fi
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get latest tag
+        id: latest
+        run: echo ::set-output name=tag::${git describe --tag --abbrev=0}
 
-  # major_publish:
-  #   name: major_publish
-  #   needs:
-  #     - tag_verify
-  #     - tagger_verify
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
+      - name: Verify tag and file version match
+        run: |
+          TAGGER=$(git for-each-ref --format='%(tagger)' refs/tags/${{ steps.latest.outputs.tag }} | sed 's/ .*//')
+          if [ $TAGGER == 'github-actions[bot]' ]; then
+            echo "Pass! Tagger is github-actions"
+          else
+            echo "Only github-actions can tagging major version"
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: Get git tag version
-  #       id: vars
-  #       run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+  major_publish:
+    name: major_publish
+    needs:
+      - tag_verify
+      - tagger_verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
 
-  #     - name: Setup the NPM
-  #       uses: actions/setup-node@v2
-  #       with:
-  #         node-version: "12.x"
-  #         registry-url: "https://registry.npmjs.org"
+      - name: Get git tag version
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
 
-  #     - name: Publish package with rc tag
-  #       run: |
-  #         echo "Publishing a major release! version=${{ steps.vars.outputs.tag }}"
-  #         npm install
+      - name: Setup the NPM
+        uses: actions/setup-node@v2
+        with:
+          node-version: "12.x"
+          registry-url: "https://registry.npmjs.org"
 
-  #         npm run build
-  #         npm publish
-  #       env:
-  #         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # - name: Publish package with rc tag
+      #   run: |
+      #     echo "Publishing a major release! version=${{ steps.vars.outputs.tag }}"
+      #     npm install
+
+      #     npm run build
+      #     npm publish
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
