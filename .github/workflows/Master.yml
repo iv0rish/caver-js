@@ -56,8 +56,8 @@ jobs:
       - name: Change branch
         run: |
           git switch test-master
-          echo git branch
-          echo git describe --tag --abbrev=0
+          git branch
+          git describe --tag --abbrev=0
 
       - name: Get git tag version
         id: vars
