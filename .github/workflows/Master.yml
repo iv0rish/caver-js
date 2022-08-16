@@ -20,6 +20,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Check branch
+        run: |
+          git branch
+          git switch test-master
+
       - name: Get packages.json tag
         id: packages
         run: echo ::set-output name=tag::v$(${GITHUB_WORKSPACE}/.github/workflows/version.sh)
