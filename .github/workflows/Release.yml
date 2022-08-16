@@ -5,16 +5,9 @@ on:
       - v[0-9].[0-9].[0-9]
 
 jobs:
-  on-success:
-    runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    steps:
-      - run: echo 'The triggering workflow passed'
-
   tag_verify:
     name: tag_verify
     needs:
-      - on-success
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
